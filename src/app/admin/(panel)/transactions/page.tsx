@@ -1,7 +1,7 @@
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { requireRole } from "@/lib/auth";
-import { getSupabase } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 import { createTransaction, setTransactionStatus } from "@/app/actions/admin";
 import { formatDate, formatPKR } from "@/lib/utils";
 
@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 export default async function TransactionsPage() {
   const me = await requireRole(["super_admin", "listing_manager", "sales_agent"]);
   const canWrite = me.role === "super_admin" || me.role === "sales_agent";
-  const s = (await getSupabase())!;
-  const { data } = await s.from("transactions").select("*, vehicles(reference,brand,model)").order("created_at", { ascending: false }).limit(100);
-  const rows = (data ?? []) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const rows = await query(
+    `select t.*, case when v.id is null then null else json_build_object('reference', v.reference, 'brand', v.brand, 'model', v.model) end as vehicles
+       from transactions t left join vehicles v on v.id = t.vehicle_id order by t.created_at desc limit 100`);
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted">Brokerage revenue counts only transactions marked <strong className="text-white">completed</strong>.</p>

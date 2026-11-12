@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { AlertTriangle, Check, ImagePlus, Loader2, Trash2, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { upload } from "@vercel/blob/client";
 import { attachImages, deleteImage, saveVehicle } from "@/app/actions/vehicles";
 import { brands, conditions, customsStatuses, districts, fuelTypes, transmissions } from "@/config/site";
 import { importOrigins, modelCatalog, photoAngles, steeringSides } from "@/config/catalog";
@@ -116,35 +116,42 @@ export function SellForm({
   }
 
   async function uploadAll(id: string) {
-    const supabase = createClient();
     const queue = files.filter((f) => f.state !== "uploading");
     if (!queue.length) return 0;
-    if (!supabase) { setError("Storage is not configured."); return queue.length; }
-    setProgress({ done: 0, total: queue.length });
-    const ok: { f: PendingFile; path: string; url: string }[] = [];
+    const total = queue.length;
+    setProgress({ done: 0, total });
+    const ok: { f: PendingFile; url: string; pathname: string }[] = [];
     let done = 0;
 
     async function worker() {
       for (let f = queue.shift(); f; f = queue.shift()) {
         setFiles((s) => s.map((x) => (x.id === f!.id ? { ...x, state: "uploading", error: undefined } : x)));
         const ext = f.file.type === "image/png" ? "png" : f.file.type === "image/webp" ? "webp" : "jpg";
-        const path = `${userId}/${id}/${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase!.storage.from("vehicle-images").upload(path, f.file, { contentType: f.file.type, cacheControl: "31536000" });
+        try {
+          // Straight to Vercel Blob; the server only hands out a token for this seller's own listing.
+          const blob = await upload(`vehicles/${userId}/${id}/${crypto.randomUUID()}.${ext}`, f.file, {
+            access: "public",
+            handleUploadUrl: "/api/blob/upload",
+            clientPayload: JSON.stringify({ vehicleId: id }),
+            contentType: f.file.type,
+          });
+          ok.push({ f, url: blob.url, pathname: blob.pathname });
+        } catch (e) {
+          setFiles((s) => s.map((x) => (x.id === f!.id ? { ...x, state: "failed", error: (e as Error).message } : x)));
+        }
         done++;
-        setProgress({ done, total: done + queue.length });
-        if (error) setFiles((s) => s.map((x) => (x.id === f!.id ? { ...x, state: "failed", error: error.message } : x)));
-        else ok.push({ f, path, url: supabase!.storage.from("vehicle-images").getPublicUrl(path).data.publicUrl });
+        setProgress({ done, total });
       }
     }
     await Promise.all([worker(), worker(), worker()]);
 
     if (ok.length) {
-      const res = await attachImages(id, ok.map((o) => ({ path: o.path, url: o.url, angle: o.f.angle })));
-      if (!res.ok) { setError(res.error); return files.length; }
+      const res = await attachImages(id, ok.map((o) => ({ url: o.url, pathname: o.pathname, angle: o.f.angle })));
+      if (!res.ok) { setError(res.error); return total; }
       ok.forEach((o) => URL.revokeObjectURL(o.f.preview));
       setFiles((s) => s.filter((x) => !ok.some((o) => o.f.id === x.id)));
     }
-    return files.length - ok.length;
+    return total - ok.length;
   }
 
   async function removeSaved(img: VehicleImage) {

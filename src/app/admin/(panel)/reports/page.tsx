@@ -1,7 +1,7 @@
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { requireRole } from "@/lib/auth";
-import { getSupabase } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 import { setReportStatus } from "@/app/actions/admin";
 import { formatDate } from "@/lib/utils";
 
@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   await requireRole(["super_admin", "listing_manager"]);
-  const s = (await getSupabase())!;
-  const { data } = await s.from("reports").select("*, vehicles(reference,brand,model,slug)").order("created_at", { ascending: false }).limit(100);
-  const rows = (data ?? []) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const rows = await query(
+    `select r.*, case when v.id is null then null else json_build_object('reference', v.reference, 'brand', v.brand, 'model', v.model, 'slug', v.slug) end as vehicles
+       from reports r left join vehicles v on v.id = r.vehicle_id order by r.created_at desc limit 100`);
   return (
     <div className="space-y-3">
       {rows.length === 0 ? <EmptyState title="No reported listings" /> : rows.map((r) => (

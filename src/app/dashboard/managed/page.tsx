@@ -2,7 +2,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AgreeButton } from "@/components/dashboard/AgreeButton";
-import { getSupabase } from "@/lib/supabase/server";
+import { query, safe } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { formatPKR } from "@/lib/utils";
 
@@ -10,11 +10,10 @@ export const metadata = { title: "Managed Sales" };
 
 export default async function ManagedPage() {
   const user = await requireUser("/dashboard/managed");
-  const supabase = await getSupabase();
-  const { data } = supabase
-    ? await supabase.from("managed_sales").select("*").eq("seller_id", user.id).order("created_at", { ascending: false })
-    : { data: [] };
-  const rows = data ?? [];
+  const rows = await safe(
+    () => query<Record<string, any>>("select * from managed_sales where seller_id = $1 order by created_at desc", [user.id]), // eslint-disable-line @typescript-eslint/no-explicit-any
+    [] as Record<string, any>[], // eslint-disable-line @typescript-eslint/no-explicit-any
+  );
   return (
     <div className="space-y-4">
       <h2 className="font-display text-xl uppercase">Managed Sales</h2>

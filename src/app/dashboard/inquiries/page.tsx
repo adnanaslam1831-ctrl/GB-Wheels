@@ -1,6 +1,6 @@
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { getSupabase } from "@/lib/supabase/server";
+import { query, safe } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 
@@ -8,16 +8,15 @@ export const metadata = { title: "My Inquiries" };
 
 export default async function InquiriesPage() {
   const user = await requireUser("/dashboard/inquiries");
-  const supabase = await getSupabase();
-  const [{ data: sent }, { data: received }] = supabase
-    ? await Promise.all([
-        supabase.from("inquiries").select("id,message,status,created_at,vehicle_id").eq("user_id", user.id).order("created_at", { ascending: false }),
-        // Limited summary for the seller: no buyer phone number.
-        supabase.rpc("get_my_vehicle_inquiries"),
-      ])
-    : [{ data: [] }, { data: [] }];
-  const rcv = (received ?? []) as { id: string; buyer_name: string; message: string | null; status: string; created_at: string }[];
-  const snt = (sent ?? []) as { id: string; message: string | null; status: string; created_at: string }[];
+  type Rcv = { id: string; buyer_name: string; message: string | null; status: string; created_at: string };
+  type Snt = { id: string; message: string | null; status: string; created_at: string };
+  const [snt, rcv] = await Promise.all([
+    safe(() => query<Snt>("select id, message, status, created_at from inquiries where user_id = $1 order by created_at desc", [user.id]), [] as Snt[]),
+    // Limited summary for the seller: no buyer phone number.
+    safe(() => query<Rcv>(
+      `select i.id, i.buyer_name, i.message, i.status, i.created_at from inquiries i join vehicles v on v.id = i.vehicle_id
+        where v.seller_id = $1 order by i.created_at desc`, [user.id]), [] as Rcv[]),
+  ]);
   return (
     <div className="space-y-8">
       <section>

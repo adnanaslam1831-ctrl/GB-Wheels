@@ -1,29 +1,21 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
-import { getSupabase } from "@/lib/supabase/server";
+import { query, safe } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import type { PublicVehicle, VehicleWithImage } from "@/types/db";
+import type { VehicleWithImage } from "@/types/db";
 
 export const metadata = { title: "Saved Cars" };
 
 export default async function SavedPage() {
   const user = await requireUser("/dashboard/saved");
-  const supabase = await getSupabase();
-  let vehicles: VehicleWithImage[] = [];
-  if (supabase) {
-    const { data: favs } = await supabase.from("favorites").select("vehicle_id").eq("user_id", user.id);
-    const ids = (favs ?? []).map((f) => f.vehicle_id);
-    if (ids.length) {
-      const [{ data: vs }, { data: imgs }] = await Promise.all([
-        supabase.from("public_vehicles").select("*").in("id", ids),
-        supabase.from("vehicle_images").select("vehicle_id,url,is_cover").in("vehicle_id", ids).order("sort_order"),
-      ]);
-      const cover = new Map<string, string>();
-      (imgs ?? []).forEach((i) => { if (i.is_cover || !cover.has(i.vehicle_id)) cover.set(i.vehicle_id, i.url); });
-      vehicles = ((vs ?? []) as PublicVehicle[]).map((v) => ({ ...v, cover_url: cover.get(v.id) ?? null }));
-    }
-  }
+  const vehicles = await safe(
+    () => query<VehicleWithImage>(
+      `select pv.*, (select i.url from vehicle_images i where i.vehicle_id = pv.id order by i.is_cover desc, i.sort_order limit 1) as cover_url
+         from favorites f join public_vehicles pv on pv.id = f.vehicle_id
+        where f.user_id = $1 order by f.created_at desc`, [user.id]),
+    [] as VehicleWithImage[],
+  );
   return (
     <div>
       <h2 className="mb-4 font-display text-xl uppercase">Saved Cars</h2>

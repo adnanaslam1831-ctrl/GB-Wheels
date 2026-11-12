@@ -1,6 +1,6 @@
 # GB Wheels
 
-Car marketplace and brokerage platform for Gilgit-Baltistan. Next.js (App Router) + TypeScript + Tailwind v4 + Framer Motion + Supabase (Postgres, Auth, Storage).
+Car marketplace and brokerage platform for Gilgit-Baltistan. Next.js (App Router) + TypeScript + Tailwind v4 + Framer Motion + Neon Postgres, built-in email/password auth and Vercel Blob (photos).
 
 ## Run locally
 
@@ -10,33 +10,30 @@ cp .env.example .env.local      # then fill in the values
 npm run dev                     # http://localhost:3000
 ```
 
-Without Supabase credentials the site still runs: public pages render with clear "Database not connected" empty states, and sign-in, forms and dashboards are disabled. Nothing pretends to work.
+Without a `DATABASE_URL` the site still runs: public pages render with clear "Database not connected" empty states, and sign-in, forms and dashboards are disabled. Nothing pretends to work.
 
-## 1. Supabase setup
+## 1. Local setup
 
-1. Create a project at supabase.com.
-2. **SQL editor**: run, in order, `supabase/migrations/0001_schema.sql`, `0002_rls_storage.sql`, `0003_fix_view_counter.sql`.
-3. Copy **Project URL** and **anon key** (Settings > API) into `.env.local`. `SUPABASE_SERVICE_ROLE_KEY` is not used by the app today; never expose it to the browser.
-4. **Authentication > URL configuration**: set Site URL to your site, and add `<site>/auth/callback` to Redirect URLs (needed for email confirmation and password reset).
-5. **Authentication > Providers > Email**: leave enabled. Keep "Confirm email" on for production. Phone/OTP sign-up is intentionally not built (needs an SMS provider such as Twilio configured in Supabase).
-6. **Storage**: the `vehicle-images` bucket (public, 5 MB, JPG/PNG/WebP) is created by migration 0002.
+1. `npm install`
+2. Create a Postgres database (a free Neon project works, or local Postgres 16) and copy `.env.example` to `.env.local`.
+3. Set `DATABASE_URL`, `ADMIN_EMAIL`, `NEXT_PUBLIC_SITE_URL`. `BLOB_READ_WRITE_TOKEN` is only needed to test photo uploads.
+4. `npm run db:migrate` (safe to re-run; also runs automatically before every `npm run build`).
+5. `npm run dev`
+
+Accounts are email + password (bcrypt hashes, random server-side session tokens stored hashed in the database, httpOnly cookie). There is no fake OTP and no email verification at sign-up. Role and ownership checks run on the server for every page and action.
 
 ## 2. Create the first admin
 
-Users cannot promote themselves (database trigger). Register normally at `/register`, then in the SQL editor:
+Set `ADMIN_EMAIL` to your email, then register at `/register` with that email: while no Super Admin exists, that account becomes `super_admin`. Register promptly after the first deploy. Sign in at `/admin/login`, then use **Admin > Users** to assign `listing_manager`, `sales_agent` or `photographer`.
 
-```sql
-update public.profiles set role = 'super_admin' where email = 'you@example.com';
-```
-
-Sign in at `/admin/login`. From **Admin > Users** you can then assign `listing_manager`, `sales_agent` or `photographer`.
+Password reset: if `RESEND_API_KEY` and `EMAIL_FROM` are set, users get an emailed 1-hour link. Otherwise a Super Admin creates a one-time reset link in **Admin > Users** and sends it to the person.
 
 | Role | Can do |
 |---|---|
 | super_admin | everything, incl. users, brokerage rules, activity log |
 | listing_manager | approve/reject/feature/delete listings, reports, inquiries (read/update), managed sales |
 | sales_agent | inquiries, managed sales, transactions |
-| photographer | view listings, manage photos |
+| photographer | view listings |
 
 ## 3. Contact details, logo, photos
 
@@ -48,7 +45,11 @@ Sign in at `/admin/login`. From **Admin > Users** you can then assign `listing_m
 
 ## 4. Deploy (Vercel)
 
-Import the repo, add the same environment variables (with `NEXT_PUBLIC_SITE_URL` = your domain), deploy, then add the production URL to Supabase redirect URLs.
+1. Import the GitHub repo into Vercel.
+2. **Storage tab**: connect a **Neon** Postgres database to the project (sets `DATABASE_URL`) and a **Blob** store (sets `BLOB_READ_WRITE_TOKEN`).
+3. Add `ADMIN_EMAIL` and `NEXT_PUBLIC_SITE_URL` (your domain), plus the optional business-contact variables.
+4. Deploy. The build applies `db/schema.sql` automatically.
+5. Register with `ADMIN_EMAIL` to become Super Admin.
 
 ## 5. How to test
 
@@ -62,6 +63,6 @@ Import the repo, add the same environment variables (with `NEXT_PUBLIC_SITE_URL`
 
 Done and wired to the database: auth (register, login, logout, reset, protected routes, server-side role checks), homepage, Buy Cars with all filters, car detail pages (gallery, honest verification panel, inquiry, report, WhatsApp/call, JSON-LD), 5-step Sell form with drafts and uploads, seller dashboard (listings, edit, delete, mark reserved/sold, saved, inquiries, managed sales, profile), admin (dashboard stats, cars, featured, users, inquiries pipeline, managed sales, brokerage rules, transactions, reports, activity log), server-side brokerage calculation, seller agreement gate, sitemap, robots.
 
-Needs your configuration: Supabase project and migrations, redirect URLs, first admin, business contact details, logo/favicon, real hero photos, legal review of Privacy/Terms.
+Needs your configuration: Neon database and Blob store (connect in Vercel), first admin, business contact details, logo/favicon, real hero photos, legal review of Privacy/Terms.
 
-Not built / limitations: Urdu translation (structure only), phone OTP login, email/SMS notifications (`notifications` table exists, nothing sends yet), admin editing of brands/districts (defined in `src/config/site.ts`), demo-data seeding script, automated browser tests for authenticated flows (need a live Supabase project).
+Not built / limitations: email verification at sign-up, photo upload to Vercel Blob (needs a live Blob token, so it was not exercised locally), Urdu translation (structure only), phone OTP login, email/SMS notifications (`notifications` table exists, nothing sends yet), admin editing of brands/districts (defined in `src/config/site.ts`), demo-data seeding script, automated browser tests for authenticated flows (need a live database; the flows were tested manually against Postgres 16).

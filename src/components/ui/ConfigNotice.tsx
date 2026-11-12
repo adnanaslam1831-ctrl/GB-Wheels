@@ -1,16 +1,14 @@
 import { DatabaseZap } from "lucide-react";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { isDbConfigured } from "@/lib/env";
 
-/** Shown wherever a feature needs Supabase and it has not been configured yet. */
+/** Shown wherever a feature needs the database and it has not been configured yet. */
 export function ConfigNotice({ className = "" }: { className?: string }) {
-  if (isSupabaseConfigured) return null;
+  if (isDbConfigured) return null;
   return (
     <div className={`flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100 ${className}`}>
       <DatabaseZap className="mt-0.5 size-5 shrink-0" />
       <p>
-        <strong className="font-semibold">Database not connected.</strong> Add your Supabase URL and anon key to{" "}
-        <code className="rounded bg-black/40 px-1">.env.local</code> and run the migrations in{" "}
-        <code className="rounded bg-black/40 px-1">supabase/migrations</code>. Until then, sign-in, listings and forms are disabled.
+        <strong className="font-semibold">Database not connected.</strong> Set <code className="rounded bg-black/40 px-1">DATABASE_URL</code> (a Postgres connection string, e.g. from Neon) and redeploy. Until then, sign-in, listings and forms are disabled.
       </p>
     </div>
   );

@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { getSupabase } from "@/lib/supabase/server";
+import { queryOne } from "@/lib/db";
 import { formatPKR } from "@/lib/utils";
 
 export const metadata = { title: "Admin Dashboard" };
@@ -7,24 +7,22 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminHome() {
   await requireRole(["super_admin", "listing_manager", "sales_agent", "photographer"]);
-  const s = (await getSupabase())!;
-  const head = { count: "exact" as const, head: true };
-  const [users, vehicles, active, pending, inquiries, managed, completed, completedRows] = await Promise.all([
-    s.from("profiles").select("id", head),
-    s.from("vehicles").select("id", head),
-    s.from("vehicles").select("id", head).eq("status", "active"),
-    s.from("vehicles").select("id", head).eq("status", "pending"),
-    s.from("inquiries").select("id", head),
-    s.from("managed_sales").select("id", head),
-    s.from("transactions").select("id", head).eq("status", "completed"),
-    s.from("transactions").select("brokerage_amount").eq("status", "completed"),
-  ]);
   // Brokerage revenue counts completed transactions only.
-  const revenue = (completedRows.data ?? []).reduce((a, r) => a + Number(r.brokerage_amount), 0);
+  const r = (await queryOne(
+    `select (select count(*)::int from profiles) as users,
+            (select count(*)::int from vehicles) as vehicles,
+            (select count(*)::int from vehicles where status = 'active') as active,
+            (select count(*)::int from vehicles where status = 'pending') as pending,
+            (select count(*)::int from inquiries) as inquiries,
+            (select count(*)::int from managed_sales) as managed,
+            (select count(*)::int from transactions where status = 'completed') as completed,
+            (select coalesce(sum(brokerage_amount), 0) from transactions where status = 'completed') as revenue`,
+  ))!;
+  const revenue = Number(r.revenue);
   const stats: [string, string | number][] = [
-    ["Total Users", users.count ?? 0], ["Total Vehicles", vehicles.count ?? 0], ["Active Listings", active.count ?? 0],
-    ["Pending Listings", pending.count ?? 0], ["Total Inquiries", inquiries.count ?? 0], ["Managed Sale Requests", managed.count ?? 0],
-    ["Completed Deals", completed.count ?? 0], ["Brokerage Revenue", formatPKR(revenue)],
+    ["Total Users", r.users], ["Total Vehicles", r.vehicles], ["Active Listings", r.active],
+    ["Pending Listings", r.pending], ["Total Inquiries", r.inquiries], ["Managed Sale Requests", r.managed],
+    ["Completed Deals", r.completed], ["Brokerage Revenue", formatPKR(revenue)],
   ];
   return (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">

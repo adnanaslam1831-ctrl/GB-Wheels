@@ -1,7 +1,7 @@
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { requireRole } from "@/lib/auth";
-import { getSupabase } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 import { applyPricing, completeManagedSale, updateManagedSale } from "@/app/actions/admin";
 import { formatDate, formatPKR } from "@/lib/utils";
 
@@ -11,12 +11,10 @@ export const dynamic = "force-dynamic";
 export default async function ManagedAdmin() {
   const me = await requireRole(["super_admin", "listing_manager", "sales_agent"]);
   const canComplete = me.role === "super_admin" || me.role === "sales_agent";
-  const s = (await getSupabase())!;
-  const [{ data }, { data: rules }] = await Promise.all([
-    s.from("managed_sales").select("*").order("created_at", { ascending: false }).limit(100),
-    s.from("brokerage_rules").select("id,name,type,is_default").eq("is_active", true),
+  const [rows, rules] = await Promise.all([
+    query("select * from managed_sales order by created_at desc limit 100"),
+    query("select id, name, type, is_default from brokerage_rules where is_active order by created_at"),
   ]);
-  const rows = data ?? [];
   return (
     <div className="space-y-4">
       {rows.length === 0 ? <EmptyState title="No managed-sale requests" /> : rows.map((m) => (
@@ -38,7 +36,7 @@ export default async function ManagedAdmin() {
               <form action={applyPricing} className="flex flex-wrap items-end gap-2 border-t border-border pt-3">
                 <input type="hidden" name="id" value={m.id} />
                 <div><label className="label text-xs">Brokerage rule (calculated on the server)</label>
-                  <select name="rule" defaultValue={rules?.find((r) => r.is_default)?.id} className="input !min-h-9">{(rules ?? []).map((r) => <option key={r.id} value={r.id}>{r.name} ({r.type})</option>)}</select></div>
+                  <select name="rule" defaultValue={rules.find((r) => r.is_default)?.id} className="input !min-h-9">{rules.map((r) => <option key={r.id} value={r.id}>{r.name} ({r.type})</option>)}</select></div>
                 <div><label className="label text-xs">Custom fee (custom rules only)</label><input name="custom" inputMode="numeric" className="input !min-h-9 !w-36" /></div>
                 <button className="btn-outline !min-h-9">Calculate &amp; propose</button>
               </form>

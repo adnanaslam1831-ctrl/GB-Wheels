@@ -14,7 +14,7 @@ export default function Page() {
         <p>We collect the information you give us: account details (name, email, phone), vehicle listings and photos, and enquiries you send.</p>
         <p>Your phone number and email are visible only to GB Wheels staff. Buyers never see a seller&apos;s private contact details; enquiries go through GB Wheels.</p>
         <p>We use your information to run the marketplace, review listings, handle enquiries and managed sales, and contact you about them. We do not sell your personal data.</p>
-        <p>Accounts and data are stored with our infrastructure provider, Supabase. You can ask us to correct or delete your data by contacting us.</p>
+        <p>Accounts and data are stored with our infrastructure providers (Vercel and Neon). You can ask us to correct or delete your data by contacting us.</p>
       </div>
     </section>
   );

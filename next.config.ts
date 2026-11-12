@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   // intentionally off: this app is mostly per-user (auth) and filter-driven (DB) pages.
   images: {
     remotePatterns: [
-      // Supabase Storage public bucket for vehicle photos
-      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+      // Vercel Blob public store for vehicle photos
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
     ],
   },
   turbopack: {

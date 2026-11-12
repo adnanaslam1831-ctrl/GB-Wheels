@@ -6,7 +6,7 @@ import { Gallery } from "@/components/vehicles/Gallery";
 import { ContactPanel } from "@/components/vehicles/ContactPanel";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { getSavedIds, getSimilarVehicles, getVehicleBySlug, getVehicleImages } from "@/lib/data/vehicles";
-import { getSupabase } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 import { contactReady, siteConfig } from "@/config/site";
 import { customsLabels, formatDate, formatMileage, formatPKR, registrationLabels } from "@/lib/utils";
 
@@ -55,9 +55,8 @@ export default async function CarPage({ params }: Props) {
   if (!v) notFound();
 
   const [images, similar, saved] = await Promise.all([getVehicleImages(v.id), getSimilarVehicles(v), getSavedIds()]);
-  // Best-effort view counter (security-definer function; only counts public listings).
-  const supabase = await getSupabase();
-  await supabase?.rpc("increment_vehicle_views", { p_vehicle: v.id });
+  // Best-effort view counter; only counts live listings.
+  await query("update vehicles set view_count = view_count + 1 where id = $1 and status in ('active','reserved')", [v.id]).catch(() => {});
 
   const title = `${v.brand} ${v.model}${v.variant ? " " + v.variant : ""} ${v.model_year}`;
   const unavailable = v.status === "sold";

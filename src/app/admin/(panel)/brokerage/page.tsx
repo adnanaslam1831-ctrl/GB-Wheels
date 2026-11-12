@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { getSupabase } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 import { saveRule, setDefaultRule, toggleRule } from "@/app/actions/admin";
 import { formatPKR } from "@/lib/utils";
 
@@ -8,13 +8,12 @@ export const dynamic = "force-dynamic";
 
 export default async function BrokeragePage() {
   await requireRole(["super_admin"]);
-  const s = (await getSupabase())!;
-  const { data } = await s.from("brokerage_rules").select("*").order("created_at");
-  const describe = (r: { type: string; fixed_amount: number | null; percentage: number | null; tiers: unknown }) =>
+  const data = await query("select * from brokerage_rules order by created_at");
+  const describe = (r: Record<string, any>) => // eslint-disable-line @typescript-eslint/no-explicit-any
     r.type === "fixed" ? formatPKR(r.fixed_amount) : r.type === "percentage" ? `${r.percentage}% of seller amount` : r.type === "tiered" ? JSON.stringify(r.tiers) : r.type === "custom" ? "Entered per deal" : "No brokerage";
   return (
     <div className="space-y-6">
-      <ul className="space-y-2">{(data ?? []).map((r) => (
+      <ul className="space-y-2">{data.map((r) => (
         <li key={r.id} className="glass-card flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
           <div><p className="font-semibold">{r.name} {r.is_default && <span className="ml-1 rounded bg-accent px-1.5 text-[10px] uppercase">Default</span>} {!r.is_active && <span className="ml-1 text-xs text-muted">(inactive)</span>}</p>
             <p className="break-all text-xs text-muted">{r.type}: {describe(r)}</p></div>

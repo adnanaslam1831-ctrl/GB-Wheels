@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { SellForm } from "@/components/sell/SellForm";
-import { getSupabase } from "@/lib/supabase/server";
+import { query, queryOne } from "@/lib/db";
+import { isDbConfigured } from "@/lib/env";
 import { requireUser } from "@/lib/auth";
 import type { VehicleImage } from "@/types/db";
 import type { VehicleFormValues } from "@/lib/validation/vehicle";
@@ -10,14 +11,13 @@ export const metadata = { title: "Edit Listing" };
 export default async function EditListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser(`/dashboard/listings/${id}/edit`);
-  const supabase = await getSupabase();
-  if (!supabase) notFound();
-  // seller_id filter + RLS: a seller can only ever load their own listing.
-  const { data: v } = await supabase.from("vehicles").select("*").eq("id", id).eq("seller_id", user.id).maybeSingle();
+  if (!isDbConfigured || !/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  // seller_id filter: a seller can only ever load their own listing.
+  const v = await queryOne("select * from vehicles where id = $1 and seller_id = $2", [id, user.id]);
   if (!v) notFound();
   if (v.status === "sold") redirect("/dashboard/listings");
-  const { data: imgs } = await supabase.from("vehicle_images").select("*").eq("vehicle_id", id).order("sort_order");
-  const { data: ms } = await supabase.from("managed_sales").select("contact_phone").eq("vehicle_id", id).maybeSingle();
+  const imgs = await query<VehicleImage>("select * from vehicle_images where vehicle_id = $1 order by sort_order", [id]);
+  const ms = await queryOne<{ contact_phone: string }>("select contact_phone from managed_sales where vehicle_id = $1", [id]);
 
   const s = (x: unknown) => (x == null ? "" : String(x));
   const initial: Partial<VehicleFormValues> = {
@@ -34,7 +34,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
     <div>
       <h2 className="mb-1 font-display text-xl uppercase">Edit Listing</h2>
       {v.status === "active" && <p className="mb-4 text-sm text-amber-200">Saving changes to a live listing sends it back for review.</p>}
-      <SellForm userId={user.id} vehicleId={id} initial={initial} existingImages={(imgs ?? []) as VehicleImage[]} />
+      <SellForm userId={user.id} vehicleId={id} initial={initial} existingImages={imgs} />
     </div>
   );
 }

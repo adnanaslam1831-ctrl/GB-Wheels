@@ -2,7 +2,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { requireRole } from "@/lib/auth";
-import { getSupabase } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 import { adminDeleteVehicle, setVehicleStatus, setVerification, toggleFeatured } from "@/app/actions/admin";
 import { formatPKR } from "@/lib/utils";
 
@@ -14,9 +14,7 @@ export default async function AdminCars({ searchParams }: { searchParams: Promis
   const me = await requireRole(["super_admin", "listing_manager", "photographer"]);
   const canEdit = me.role !== "photographer";
   const { status = "pending" } = await searchParams;
-  const s = (await getSupabase())!;
-  const { data } = await s.from("vehicles").select("*").eq("status", FILTERS.includes(status) ? status : "pending").order("created_at", { ascending: false }).limit(100);
-  const rows = data ?? [];
+  const rows = await query("select * from vehicles where status = $1 order by created_at desc limit 100", [FILTERS.includes(status) ? status : "pending"]);
   const btn = "rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:border-accent hover:text-accent";
   return (
     <div className="space-y-4">

@@ -8,7 +8,7 @@ import { testimonials } from "@/config/catalog";
 import { Reveal } from "@/components/ui/Reveal";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { EmptyState } from "@/components/ui/ConfigNotice";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { isDbConfigured } from "@/lib/env";
 import type { VehicleWithImage } from "@/types/db";
 
 export function SectionHeader({ title, href, linkLabel = "View all" }: { title: string; href?: string; linkLabel?: string }) {
@@ -62,10 +62,10 @@ export function VehicleGridSection({
         </div>
       ) : (
         <EmptyState
-          title={isSupabaseConfigured ? "No cars listed yet" : "Database not connected"}
-          body={emptyBody ?? (isSupabaseConfigured
+          title={isDbConfigured ? "No cars listed yet" : "Database not connected"}
+          body={emptyBody ?? (isDbConfigured
             ? "Approved listings will appear here. Be the first to list your car."
-            : "Connect Supabase to show live listings here.")}
+            : "Connect the database to show live listings here.")}
           action={<Link href="/sell" className="btn-primary">Sell Your Car</Link>}
         />
       )}

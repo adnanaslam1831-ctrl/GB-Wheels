@@ -75,10 +75,11 @@ export function ForgotPasswordForm() {
   );
 }
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ token }: { token: string }) {
   const [state, action] = useActionState(resetPassword, initial);
   return (
     <form action={action} className="space-y-4">
+      <input type="hidden" name="token" value={token} />
       <Field label="New password" name="password" hint="At least 8 characters.">
         <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} className="input" />
       </Field>

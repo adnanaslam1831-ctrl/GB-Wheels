@@ -3,7 +3,7 @@ import { CheckCircle2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ListingActions } from "@/components/dashboard/ListingActions";
-import { getSupabase } from "@/lib/supabase/server";
+import { query, safe } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { formatPKR } from "@/lib/utils";
 import type { ListingStatus } from "@/types/db";
@@ -15,11 +15,12 @@ type Row = { id: string; slug: string; reference: string; brand: string; model: 
 export default async function ListingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
   const { saved } = await searchParams;
   const user = await requireUser("/dashboard/listings");
-  const supabase = await getSupabase();
-  const { data } = supabase
-    ? await supabase.from("vehicles").select("id,slug,reference,brand,model,model_year,status,seller_asking_price,advertised_price,selling_mode,view_count,rejection_reason").eq("seller_id", user.id).order("created_at", { ascending: false })
-    : { data: [] };
-  const rows = (data ?? []) as Row[];
+  const rows = await safe(
+    () => query<Row>(
+      `select id, slug, reference, brand, model, model_year, status, seller_asking_price, advertised_price, selling_mode, view_count, rejection_reason
+         from vehicles where seller_id = $1 order by created_at desc`, [user.id]),
+    [] as Row[],
+  );
   return (
     <div className="space-y-4">
       {saved && (

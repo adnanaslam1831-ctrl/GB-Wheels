@@ -1,6 +1,6 @@
 import { EmptyState } from "@/components/ui/ConfigNotice";
 import { requireRole } from "@/lib/auth";
-import { getSupabase } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 import { toggleFeatured } from "@/app/actions/admin";
 import { formatPKR } from "@/lib/utils";
 
@@ -9,9 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function FeaturedPage() {
   await requireRole(["super_admin", "listing_manager"]);
-  const s = (await getSupabase())!;
-  const { data } = await s.from("vehicles").select("id,brand,model,model_year,advertised_price,is_featured,reference").eq("status", "active").order("is_featured", { ascending: false }).order("created_at", { ascending: false }).limit(100);
-  const rows = data ?? [];
+  const rows = await query("select id, brand, model, model_year, advertised_price, is_featured, reference from vehicles where status = 'active' order by is_featured desc, created_at desc limit 100");
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted">Only active listings can be featured. Featured cars appear in the homepage Featured section.</p>
