@@ -21,7 +21,7 @@
   --color-muted: var(--muted);
   --color-fg: var(--fg);
   --font-sans: "Inter Variable", system-ui, sans-serif;
-  --font-display: "Oswald Variable", "Inter Variable", sans-serif;
+  --font-display: "Exo 2 Variable", "Inter Variable", sans-serif;
 }
 
 html {
@@ -87,8 +87,22 @@ body {
     @apply mb-1.5 block text-sm font-medium text-fg/90;
   }
   .section-title {
-    @apply font-display text-2xl font-semibold uppercase tracking-wide sm:text-3xl;
+    @apply font-display text-2xl font-bold sm:text-3xl;
   }
+  .section-title em {
+    @apply not-italic text-accent;
+  }
+  /* Light, rounded select/field used by the search panel (matches the design) */
+  .field-light {
+    @apply flex min-h-11 items-center gap-2 rounded-md bg-[#e9eaee] px-3 text-sm font-medium text-[#14161b];
+  }
+  .field-light select {
+    @apply min-h-11 w-full min-w-0 appearance-none bg-transparent pr-4 text-xs sm:pr-6 sm:text-sm font-medium text-[#14161b] focus:outline-none;
+  }
+}
+
+.red-glow {
+  box-shadow: 0 0 22px rgba(237, 16, 38, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .skeleton {

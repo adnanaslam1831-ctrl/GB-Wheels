@@ -1,9 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight, BadgeCheck, Camera, ClipboardCheck, Headphones, MapPinned, MessageSquareText,
-  ShieldCheck, Timer, UserRoundCheck,
+  ArrowRight, BadgeCheck, Camera, ClipboardCheck, Handshake, Headset, MapPin, MapPinned, MessageSquareText,
+  ShieldCheck, UserRoundCheck, Zap,
 } from "lucide-react";
-import { brands, districts, siteConfig } from "@/config/site";
+import { BrandMark } from "@/components/ui/BrandMark";
+import { districts } from "@/config/site";
 import { testimonials } from "@/config/catalog";
 import { Reveal } from "@/components/ui/Reveal";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
@@ -11,12 +13,12 @@ import { EmptyState } from "@/components/ui/ConfigNotice";
 import { isDbConfigured } from "@/lib/env";
 import type { VehicleWithImage } from "@/types/db";
 
-export function SectionHeader({ title, href, linkLabel = "View all" }: { title: string; href?: string; linkLabel?: string }) {
+export function SectionHeader({ title, href, linkLabel = "View all" }: { title: React.ReactNode; href?: string; linkLabel?: string }) {
   return (
-    <div className="mb-6 flex items-end justify-between gap-4">
-      <h2 className="section-title">{title}<span className="mt-2 block h-0.5 w-12 bg-accent" /></h2>
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <h2 className="section-title">{title}</h2>
       {href && (
-        <Link href={href} className="flex items-center gap-1 text-sm font-semibold text-accent hover:underline">
+        <Link href={href} className="flex items-center gap-2 text-xs font-medium text-fg hover:text-accent sm:text-sm">
           {linkLabel} <ArrowRight className="size-4" />
         </Link>
       )}
@@ -24,22 +26,22 @@ export function SectionHeader({ title, href, linkLabel = "View all" }: { title: 
   );
 }
 
+const homeBrands = ["Toyota", "Honda", "Suzuki", "Nissan", "Daihatsu", "Mitsubishi", "Other"] as const;
+
 export function BrandGrid({ counts }: { counts: Record<string, number> }) {
   return (
-    <section className="container-gb py-12">
-      <SectionHeader title="Browse by Brand" />
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
-        {brands.map((b, i) => (
-          <Reveal key={b} delay={i * 0.03}>
+    <section className="container-gb py-8 sm:py-10">
+      <SectionHeader title={<>Browse by <em>Brand</em></>} href="/buy" linkLabel="View All Brands" />
+      <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-7 sm:gap-3 sm:overflow-visible sm:px-0 [scrollbar-width:none]">
+        {homeBrands.map((b, i) => (
+          <Reveal key={b} delay={i * 0.03} className="min-w-[88px] flex-1 sm:min-w-0">
             <Link
-              href={`/buy?brand=${encodeURIComponent(b)}`}
-              className="glass-card group flex aspect-square flex-col items-center justify-center gap-1 p-2 text-center transition hover:-translate-y-1 hover:border-accent"
+              href={b === "Other" ? "/buy?brand=Other" : `/buy?brand=${encodeURIComponent(b)}`}
+              className="flex h-[84px] flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-gradient-to-b from-surface-2 to-surface text-center text-xs font-medium shadow-[0_6px_20px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:border-accent sm:h-[96px] sm:text-sm"
             >
-              <span className="grid size-11 place-items-center rounded-full border border-border bg-bg font-display text-lg font-semibold text-white transition group-hover:border-accent group-hover:text-accent">
-                {b.charAt(0)}
-              </span>
-              <span className="text-xs font-semibold">{b}</span>
-              {counts[b] ? <span className="text-[10px] text-muted">{counts[b]} cars</span> : null}
+              <BrandMark brand={b} className={b === "Other" ? "h-4 w-9" : "size-8 sm:size-9"} />
+              <span>{b}</span>
+              {counts[b] ? <span className="sr-only">{counts[b]} cars</span> : null}
             </Link>
           </Reveal>
         ))}
@@ -49,17 +51,19 @@ export function BrandGrid({ counts }: { counts: Record<string, number> }) {
 }
 
 export function VehicleGridSection({
-  title, vehicles, saved, href, emptyBody,
-}: { title: string; vehicles: VehicleWithImage[]; saved: Set<string>; href?: string; emptyBody?: string }) {
+  title, vehicles, saved, href, emptyBody, sample = false, cols = 4,
+}: { title: React.ReactNode; vehicles: VehicleWithImage[]; saved: Set<string>; href?: string; emptyBody?: string; sample?: boolean; cols?: 3 | 4 }) {
   return (
-    <section className="container-gb py-10">
-      <SectionHeader title={title} href={vehicles.length ? href : undefined} />
+    <section className="container-gb py-8 sm:py-10">
+      <SectionHeader title={title} href={href} linkLabel="View All Listings" />
       {vehicles.length ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-3 sm:gap-5 ${cols === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
           {vehicles.map((v, i) => (
             <Reveal key={v.id} delay={(i % 4) * 0.05}><VehicleCard v={v} saved={saved.has(v.id)} /></Reveal>
           ))}
         </div>
+      ) : sample ? (
+        <SampleCars connected={isDbConfigured} />
       ) : (
         <EmptyState
           title={isDbConfigured ? "No cars listed yet" : "Database not connected"}
@@ -73,10 +77,86 @@ export function VehicleGridSection({
   );
 }
 
+const samples = [
+  { name: "Toyota Crown 2022", city: "Gilgit", specs: "2.5L | Automatic | 45,000 km", price: "Rs 7,950,000", img: "/photos/crown.jpg", featured: true },
+  { name: "Toyota Land Cruiser 300", city: "Skardu", specs: "3.5L | Automatic | 20,000 km", price: "Rs 26,500,000", img: "/photos/land-cruiser.jpg" },
+  { name: "Toyota Corolla GLI Grande", city: "Gilgit", specs: "1.8L | Automatic | 70,000 km", price: "Rs 5,200,000", img: "/photos/corolla.jpg" },
+];
+
+/** Shown only while there are no approved listings. Clearly labelled; not real cars and not for sale. */
+function SampleCars({ connected }: { connected: boolean }) {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+        {samples.map((c, i) => (
+          <article key={c.name} className={`overflow-hidden rounded-xl border border-border bg-surface shadow-[0_8px_30px_rgba(0,0,0,0.35)] ${i === 2 ? "hidden lg:block" : ""}`}>
+            <div className="relative aspect-[16/9]">
+              <Image src={c.img} alt={`${c.name} (sample image)`} fill sizes="(min-width:1024px) 33vw, 50vw" className="object-cover" />
+              <div className="absolute left-2 top-2 flex gap-1.5">
+                {c.featured && <span className="rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-white">Featured</span>}
+                <span className="rounded-md bg-amber-500 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-black">Sample</span>
+              </div>
+            </div>
+            <div className="p-3 sm:p-4">
+              <h3 className="line-clamp-1 text-[15px] font-semibold sm:text-base">{c.name}</h3>
+              <p className="mt-1 flex items-center gap-1 text-xs text-fg/80"><MapPin className="size-3.5 text-accent" />{c.city}</p>
+              <p className="mt-1 truncate whitespace-nowrap text-[10px] text-fg/90 sm:text-xs">{c.specs}</p>
+              <p className="mt-2 text-lg font-bold text-accent sm:text-xl">{c.price}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p className="mt-3 text-center text-xs text-muted">
+        Sample cars shown for illustration only, not for sale.{" "}
+        {connected ? "Approved listings will replace them." : "Connect the database to show live listings."}{" "}
+        <Link href="/sell" className="text-accent hover:underline">List your car</Link>
+      </p>
+    </>
+  );
+}
+
+const why = [
+  { icon: ShieldCheck, title: "Trusted Platform", body: "Reviewed Listings" },
+  { icon: Handshake, title: "Local Support", body: "Across GB" },
+  { icon: Zap, title: "Fast & Easy", body: "Process" },
+  { icon: Headset, title: "Dedicated Support", body: "Always Here" },
+];
+
+export function WhyChoose() {
+  return (
+    <section className="mt-6 border-y border-border bg-gradient-to-b from-surface/70 to-bg">
+      <div className="container-gb grid gap-6 py-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-10">
+        <div>
+          <h2 className="section-title mb-5">Why Choose <em>GBWheels?</em></h2>
+          <ul className="grid grid-cols-4 gap-1 rounded-xl border border-border bg-surface/60 py-4 sm:border-0 sm:bg-transparent sm:py-0">
+            {why.map((w) => (
+              <li key={w.title} className="flex flex-col items-center px-1 text-center [&:not(:last-child)]:border-r [&:not(:last-child)]:border-border sm:border-0">
+                <w.icon className="mb-2 size-8 text-accent drop-shadow-[0_0_10px_rgba(237,16,38,0.5)] sm:size-10" strokeWidth={1.6} aria-hidden />
+                <p className="text-[11px] font-semibold leading-tight text-white sm:text-sm">{w.title}</p>
+                <p className="text-[10px] text-fg/80 sm:text-xs">{w.body}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="relative isolate min-h-[150px] overflow-hidden rounded-xl border border-accent/40 sm:min-h-[190px]">
+          <Image src="/photos/banner.jpg" alt="" aria-hidden fill sizes="(min-width:1024px) 40vw, 100vw" className="-z-20 object-cover object-right" />
+          <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-bg via-bg/80 to-transparent" />
+          <div className="flex h-full min-h-[inherit] flex-col justify-center p-5 sm:p-7">
+            <h3 className="max-w-[16rem] font-display text-xl font-bold italic leading-tight sm:text-2xl">Your Trusted Car Marketplace in Gilgit Baltistan</h3>
+            <Link href="/about" className="red-glow mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-b from-[#ff2a3f] to-[#c10a1d] px-5 py-2 text-sm font-semibold text-white">
+              Learn More <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function DistrictGrid({ counts }: { counts: Record<string, number> }) {
   return (
     <section className="container-gb py-12">
-      <SectionHeader title="Browse by District" />
+      <SectionHeader title={<>Browse by <em>District</em></>} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {districts.map((d) => (
           <Link key={d} href={`/buy?district=${d}`} className="glass-card group flex items-center justify-between p-4 transition hover:border-accent">
@@ -100,7 +180,7 @@ export function HowItWorks() {
   return (
     <section className="border-y border-border bg-surface/60 py-14">
       <div className="container-gb">
-        <SectionHeader title="How GB Wheels Works" />
+        <SectionHeader title={<>How GB Wheels <em>Works</em></>} />
         <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((s, i) => (
             <Reveal key={s.title} delay={i * 0.06}>
@@ -128,7 +208,7 @@ export function ManagedPromo() {
         <div className="relative grid items-center gap-6 lg:grid-cols-[1.4fr_1fr]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-accent">Managed Sale</p>
-            <h2 className="mt-2 font-display text-3xl font-semibold uppercase sm:text-4xl">Too busy to sell? We&apos;ll sell it for you.</h2>
+            <h2 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Too busy to sell? We&apos;ll sell it for you.</h2>
             <p className="mt-3 max-w-xl text-muted">
               GB Wheels photographs your car, writes the listing, promotes it, handles enquiries, arranges viewings and helps negotiate.
               You see the brokerage fee and advertised price up front and must agree before anything goes live.
@@ -146,56 +226,11 @@ export function ManagedPromo() {
   );
 }
 
-const trust = [
-  { icon: ShieldCheck, title: "Trusted Platform", body: "Every listing is reviewed. Verification badges appear only after checks are actually done." },
-  { icon: MapPinned, title: "Local Support Across GB", body: "From Gilgit to Skardu, Hunza to Diamer, we know the region." },
-  { icon: Timer, title: "Fast & Easy Process", body: "List in minutes, or let us handle everything." },
-  { icon: Headphones, title: "Dedicated Customer Support", body: "Reach us by phone, WhatsApp or email." },
-];
-
-export function TrustSection({ title = "Why Choose GB Wheels" }: { title?: string }) {
-  return (
-    <section className="container-gb py-12">
-      <SectionHeader title={title} />
-      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-        {trust.map((t, i) => (
-          <Reveal key={t.title} delay={i * 0.05}>
-            <div className="glass-card h-full p-4 sm:p-5">
-              <t.icon className="mb-3 size-7 text-accent" />
-              <h3 className="font-display text-base uppercase tracking-wide sm:text-lg">{t.title}</h3>
-              <p className="mt-1 text-xs text-muted sm:text-sm">{t.body}</p>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function PromoBanner() {
-  return (
-    <section className="container-gb pb-12">
-      <div className="relative isolate overflow-hidden rounded-lg border border-border bg-surface px-6 py-14 text-center sm:py-20">
-        <svg aria-hidden viewBox="0 0 800 200" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 -z-10 h-full w-full opacity-60">
-          <polygon fill="#161920" points="0,200 0,120 100,60 170,110 280,20 380,100 470,50 570,120 670,40 800,100 800,200" />
-          <polygon fill="#0d0f14" points="0,200 0,160 140,110 260,150 400,90 540,150 680,100 800,150 800,200" />
-        </svg>
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60%_80%_at_50%_100%,rgba(237,16,38,0.25),transparent)]" />
-        <h2 className="mx-auto max-w-2xl font-display text-3xl font-semibold uppercase sm:text-4xl">
-          Your Trusted Car Marketplace in <span className="text-accent">Gilgit-Baltistan</span>
-        </h2>
-        <p className="mt-2 text-sm text-muted">{siteConfig.tagline}</p>
-        <Link href="/about" className="btn-primary mt-6">Learn More</Link>
-      </div>
-    </section>
-  );
-}
-
 export function Testimonials() {
   if (!testimonials.length) return null; // only real, permitted testimonials are ever shown
   return (
     <section className="container-gb py-12">
-      <SectionHeader title="What Customers Say" />
+      <SectionHeader title={<>What Customers <em>Say</em></>} />
       <div className="grid gap-4 md:grid-cols-3">
         {testimonials.map((t) => (
           <figure key={t.name} className="glass-card p-5">
@@ -206,4 +241,10 @@ export function Testimonials() {
       </div>
     </section>
   );
+}
+
+/** Kept for the About and Sell pages: the same "Why choose" band as the homepage. */
+export function TrustSection(_props: { title?: string }) {
+  void _props;
+  return <WhyChoose />;
 }

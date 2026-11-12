@@ -4,88 +4,42 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { CarIllustration } from "@/components/ui/CarIllustration";
-import { heroCars } from "@/config/catalog";
 
-const spec = {
-  crown: { body: "sedan" as const, color: "#0d0e12", pos: "left-0 bottom-[6%] w-[50%] z-30", from: -40 },
-  lc300: { body: "suv" as const, color: "#e8eaee", pos: "left-[24%] bottom-[22%] w-[52%] z-20", from: 0 },
-  corolla: { body: "sedan" as const, color: "#8d939e", pos: "right-0 bottom-[6%] w-[50%] z-30", from: 40 },
-};
-
-function Mountains() {
-  return (
-    <svg viewBox="0 0 800 300" preserveAspectRatio="none" aria-hidden className="absolute inset-x-0 bottom-0 h-3/4 w-full">
-      <defs>
-        <linearGradient id="m1" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2a2f3a" /><stop offset="1" stopColor="#0b0d12" />
-        </linearGradient>
-        <linearGradient id="m2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1a1d25" /><stop offset="1" stopColor="#07080b" />
-        </linearGradient>
-      </defs>
-      <polygon fill="url(#m1)" points="0,300 0,170 90,90 150,140 250,40 340,130 420,70 520,150 610,60 700,130 800,80 800,300" />
-      <polygon fill="#e9edf5" opacity="0.12" points="250,40 232,72 250,64 268,80" />
-      <polygon fill="#e9edf5" opacity="0.12" points="610,60 590,94 610,86 630,98" />
-      <polygon fill="url(#m2)" points="0,300 0,220 120,160 210,210 330,140 450,215 560,170 680,220 800,160 800,300" />
-    </svg>
-  );
-}
-
+/** Hero: three-car showcase on the left (photo supplied with the design), headline on the right. */
 export function Hero() {
   const reduce = useReducedMotion();
   return (
-    <section className="relative isolate overflow-hidden border-b border-border">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(80%_60%_at_25%_30%,rgba(237,16,38,0.16),transparent_65%),linear-gradient(180deg,#0a0b10,#050608)]" />
-      <div className="container-gb grid items-center gap-6 py-6 lg:grid-cols-[1.25fr_1fr] lg:gap-12 lg:py-14">
-        {/* Car composition */}
-        <div className="relative mx-auto aspect-[16/10] w-full max-w-2xl overflow-hidden rounded-lg border border-border/60 bg-bg/40 lg:max-w-none">
-          <Mountains />
-          <div aria-hidden className="absolute bottom-[8%] left-1/2 h-24 w-3/4 -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
-          {heroCars.map((c, i) => {
-            const s = spec[c.key];
-            return (
-              <motion.figure
-                key={c.key}
-                className={`absolute ${s.pos}`}
-                initial={reduce ? false : { opacity: 0, x: s.from, y: 20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.15 * i, ease: "easeOut" }}
-              >
-                {c.image ? (
-                  <Image src={c.image} alt={`${c.name} ${c.tone}`} width={600} height={300} priority className="h-auto w-full drop-shadow-2xl" />
-                ) : (
-                  <CarIllustration body={s.body} color={s.color} label={`${c.tone} ${c.name}`} className="w-full drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)]" />
-                )}
-              </motion.figure>
-            );
-          })}
+    <section className="relative isolate overflow-hidden bg-bg">
+      <div className="relative min-h-[180px] sm:min-h-[280px] lg:h-[clamp(330px,26vw,470px)]">
+        {/* Photo: left ~2/3, fading into the page background */}
+        <div className="absolute inset-y-0 left-0 w-[74%] lg:w-[64%]">
+          <Image src="/photos/hero-m.jpg" alt="Toyota Crown, Land Cruiser LC300 and Corolla GLI in the Gilgit-Baltistan mountains" fill priority sizes="70vw" className="object-cover object-left sm:hidden" />
+          <Image src="/photos/hero.jpg" alt="" aria-hidden fill priority sizes="64vw" className="hidden object-cover object-left sm:block" />
+          <div aria-hidden className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-r from-transparent to-bg" />
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-b from-transparent to-bg/60" />
         </div>
-        <ul className="mx-auto -mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] font-medium uppercase tracking-wider text-fg/60 lg:col-start-1 lg:row-start-2 lg:-mt-6">
-          {heroCars.map((c) => <li key={c.key}>{c.name}</li>)}
-        </ul>
 
-        {/* Copy */}
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-center lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:text-left"
-        >
-          <p className="mb-3 inline-block rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-accent">
-            Gilgit-Baltistan&apos;s car marketplace
-          </p>
-          <h1 className="font-display text-4xl font-semibold uppercase leading-[1.05] sm:text-5xl lg:text-6xl">
-            Find Your Next Car in <span className="text-accent">Gilgit-Baltistan</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-md text-base text-muted lg:mx-0">
-            Buy and sell cars with confidence. Discover the right vehicle with GB Wheels.
-          </p>
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:justify-center lg:justify-start">
-            <Link href="/buy" className="btn-primary sm:min-w-40">Browse Cars <ArrowRight className="size-4" /></Link>
-            <Link href="/sell" className="btn-outline sm:min-w-40">Sell Your Car</Link>
-          </div>
-        </motion.div>
+        <div className="container-gb relative flex h-full min-h-[inherit] items-center justify-end">
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="w-[38%] lg:w-[36%]"
+          >
+            <h1 className="font-display text-[16px] font-bold italic leading-[1.1] sm:text-4xl lg:-rotate-3 lg:text-[2.7rem] xl:text-5xl">
+              Get Your Car or <br />Sell Your Car in <br />
+              <span className="text-accent drop-shadow-[0_0_18px_rgba(237,16,38,0.45)]">Gilgit Baltistan!</span>
+            </h1>
+            <p className="mt-2 text-[10px] italic text-fg/90 sm:mt-4 sm:text-base lg:-rotate-3">Trusted. Professional. Local.</p>
+            <Link
+              href="/buy"
+              className="red-glow mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-[#ff2a3f] to-[#c10a1d] py-1 pl-4 pr-1 text-[11px] font-semibold text-white sm:mt-6 sm:gap-4 sm:py-2 sm:pl-7 sm:pr-2 sm:text-base"
+            >
+              Browse Cars
+              <span className="grid size-6 place-items-center rounded-full border border-white/80 bg-black/70 sm:size-9"><ArrowRight className="size-3.5 sm:size-5" /></span>
+            </Link>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

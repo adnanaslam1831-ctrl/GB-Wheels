@@ -1,19 +1,19 @@
+import Image from "next/image";
 import Link from "next/link";
 
-/**
- * Text-based wordmark used until the supplied logo file is added.
- * To use the real logo, drop it at public/logo.png and swap the body for next/image
- * (keep width/height proportional so it is never distorted).
- */
-export function Logo({ className = "" }: { className?: string }) {
+/** The supplied GB Wheels logo (white/red version for the dark theme). Aspect ratio is fixed so it is never distorted. */
+export function Logo({ className = "", priority = false }: { className?: string; priority?: boolean }) {
   return (
-    <Link href="/" aria-label="GB Wheels home" className={`flex items-center gap-2 ${className}`}>
-      <span className="grid size-9 place-items-center rounded-md bg-accent font-display text-lg font-bold text-white">
-        GB
-      </span>
-      <span className="font-display text-xl font-semibold uppercase tracking-wider text-white">
-        Wheels
-      </span>
+    <Link href="/" aria-label="GB Wheels home" className={`inline-block shrink-0 ${className}`}>
+      <Image
+        src="/brand/logo.png"
+        alt="GB Wheels"
+        width={1200}
+        height={348}
+        priority={priority}
+        className="h-auto w-full"
+        sizes="(min-width:1024px) 230px, 150px"
+      />
     </Link>
   );
 }
