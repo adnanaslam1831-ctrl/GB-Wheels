@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { siFacebook, siInstagram, siTiktok, siYoutube } from "simple-icons";
 import { Logo } from "./Logo";
-import { siteConfig } from "@/config/site";
+import { contactReady, siteConfig } from "@/config/site";
 
 const quick = [
   { href: "/", label: "Home" },
@@ -41,9 +41,13 @@ export function Footer() {
         <div>
           <h3 className="text-sm font-semibold text-white">Contact Us</h3>
           <ul className="mt-3 space-y-2.5 text-xs text-fg/90">
-            <li className="flex items-center gap-2.5"><Phone className="size-4 shrink-0 text-accent" aria-hidden />{contact.phone}</li>
-            <li className="flex items-center gap-2.5"><Mail className="size-4 shrink-0 text-accent" aria-hidden />{contact.email}</li>
-            <li className="flex items-center gap-2.5"><MapPin className="size-4 shrink-0 text-accent" aria-hidden />{contact.address}</li>
+            {contactReady.phone && (
+              <li><a href={`tel:${contact.phone.replace(/\s/g, "")}`} className="flex items-center gap-2.5 hover:text-accent"><Phone className="size-4 shrink-0 text-accent" aria-hidden />{contact.phone}</a></li>
+            )}
+            {contactReady.email && (
+              <li><a href={`mailto:${contact.email}`} className="flex items-center gap-2.5 hover:text-accent"><Mail className="size-4 shrink-0 text-accent" aria-hidden />{contact.email}</a></li>
+            )}
+            <li className="flex items-center gap-2.5"><MapPin className="size-4 shrink-0 text-accent" aria-hidden />{contactReady.address ? contact.address : "Gilgit-Baltistan, Pakistan"}</li>
           </ul>
         </div>
 

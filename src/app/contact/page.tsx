@@ -6,22 +6,18 @@ export const metadata: Metadata = { title: "Contact Us" };
 
 export default function ContactPage() {
   const c = siteConfig.contact;
+  // Only show details that have really been set; never show placeholders to visitors.
   const items = [
-    { icon: Phone, label: "Phone", value: c.phone, href: contactReady.phone ? `tel:${c.phone.replace(/\s/g, "")}` : null },
-    { icon: MessageCircle, label: "WhatsApp", value: contactReady.whatsapp ? `+${c.whatsapp}` : "Not set yet", href: contactReady.whatsapp ? `https://wa.me/${c.whatsapp}` : null },
-    { icon: Mail, label: "Email", value: c.email, href: contactReady.email ? `mailto:${c.email}` : null },
-    { icon: MapPin, label: "Location", value: c.address, href: null },
-  ];
+    contactReady.phone && { icon: Phone, label: "Phone", value: c.phone, href: `tel:${c.phone.replace(/\s/g, "")}` },
+    contactReady.whatsapp && { icon: MessageCircle, label: "WhatsApp", value: `+${c.whatsapp}`, href: `https://wa.me/${c.whatsapp}` },
+    contactReady.email && { icon: Mail, label: "Email", value: c.email, href: `mailto:${c.email}` },
+    { icon: MapPin, label: "Location", value: contactReady.address ? c.address : "Gilgit-Baltistan, Pakistan", href: null as string | null },
+  ].filter(Boolean) as { icon: typeof Phone; label: string; value: string; href: string | null }[];
   const socials = Object.entries(c.social).filter(([, u]) => u);
   return (
     <section className="container-gb max-w-3xl py-14">
       <h1 className="font-display text-4xl font-semibold uppercase">Contact GB Wheels</h1>
       <p className="mt-2 text-muted">Questions about buying, selling or a managed sale? Reach out.</p>
-      {!(contactReady.phone && contactReady.email) && (
-        <p className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
-          Contact details are placeholders. Set the <code>NEXT_PUBLIC_BUSINESS_*</code> variables in <code>.env.local</code> (see <code>.env.example</code>).
-        </p>
-      )}
       <ul className="mt-8 grid gap-4 sm:grid-cols-2">
         {items.map(({ icon: I, label, value, href }) => (
           <li key={label} className="glass-card flex items-start gap-3 p-4">

@@ -33,6 +33,7 @@ export const contactReady = {
   phone: !siteConfig.contact.phone.includes("000 0000000"),
   whatsapp: siteConfig.contact.whatsapp !== "920000000000" && siteConfig.contact.whatsapp.length > 8,
   email: siteConfig.contact.email !== "hello@example.com",
+  address: !siteConfig.contact.address.includes("address to be added"),
 };
 
 export const districts = [
